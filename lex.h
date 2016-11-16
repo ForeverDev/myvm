@@ -2,6 +2,7 @@
 #define LEX_H
 
 #include <stdio.h>
+#include <stdint.h>
 
 typedef struct Token Token;
 typedef struct TokenList TokenList;
@@ -17,13 +18,18 @@ struct LexState {
 enum TokenType {
 	TOK_NOTYPE = 0,
 	TOK_NUMBER,
-	TOK_IDENTIFIER
+	TOK_IDENTIFIER,
+	TOK_OPERATOR
 };
 
 struct Token {
-	char* str;
 	unsigned int line;
 	TokenType type;
+	union {
+		char* sval;
+		char oval;
+		uint8_t nval;
+	};
 };
 
 struct TokenList {
