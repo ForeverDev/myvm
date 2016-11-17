@@ -6,6 +6,7 @@
 
 static TokenList* new_list();
 static LexState* lex_init(const char*);
+static void lex_destroy(LexState*);
 static void lex_generate_tokens();
 static void append_token(LexState*, Token*);
 static void print_token_list(TokenList*);
@@ -40,16 +41,16 @@ new_list() {
 }
 
 static void
-append_token(LexState* lexer, Token* token) {
-	if (!lexer->tokens->head->value) {
+append_token(LexState* L, Token* token) {
+	if (!L->tokens->head->value) {
 		/* no need to make a new list if it is empty */
-		lexer->tokens->value = token;
+		L->tokens->value = token;
 	} else {
 		TokenList* newlist = malloc(sizeof(TokenList));
 		newlist->value = token;
-		newlist->head = lexer->tokens;
+		newlist->head = L->tokens;
 		newlist->next = NULL;
-		TokenList* tail = lexer->tokens;
+		TokenList* tail = L->tokens;
 		while (tail->next) {
 			tail = tail->next;
 		}
@@ -59,27 +60,35 @@ append_token(LexState* lexer, Token* token) {
 
 static LexState*
 lex_init(const char* filename) {
-	LexState* lexer = malloc(sizeof(LexState));
-	lexer->handle = fopen(filename, "rb");
-	if (!lexer->handle) {
-		free(lexer);
+	LexState* L = malloc(sizeof(LexState));
+	L->handle = fopen(filename, "rb");
+	if (!L->handle) {
+		free(L);
 		return NULL;
 	}
 	unsigned long long flen;
-	fseek(lexer->handle, 0, SEEK_END);
-	flen = ftell(lexer->handle);
-	fseek(lexer->handle, 0, SEEK_SET);
-	lexer->contents = malloc(flen + 1);
-	fread(lexer->contents, flen, 1, lexer->handle);
-	lexer->contents[flen] = 0;
-	lexer->tokens = new_list();
-	return lexer;
+	fseek(L->handle, 0, SEEK_END);
+	flen = ftell(L->handle);
+	fseek(L->handle, 0, SEEK_SET);
+	L->contents = malloc(flen + 1);
+	fread(L->contents, flen, 1, L->handle);
+	L->contents[flen] = 0;
+	L->tokens = new_list();
+	return L;
 }
 
 static void
-lex_generate_tokens(LexState* lexer) {
+lex_destroy(LexState* L) {
+	/* note L->tokens remain untouched, they are returned by lex_file */
+	fclose(L->handle);
+	free(L->contents);
+	free(L);
+}
+
+static void
+lex_generate_tokens(LexState* L) {
 	/* this is where tokens are generated... */
-	char* scan = lexer->contents;
+	char* scan = L->contents;
 	unsigned int line = 0;
 	char* buf; /* temporary buffer that reads a string */
 	char* at;  /* reader */
@@ -101,7 +110,7 @@ lex_generate_tokens(LexState* lexer) {
 			append->line = line;
 			append->type = TOK_OPERATOR;
 			append->oval = *at;
-			append_token(lexer, append);
+			append_token(L, append);
 			scan++;
 		} else if (isdigit(*at)) {
 			int base = (*at == '0' && at[1] == 'x') ? 16 : 10;
@@ -127,7 +136,7 @@ lex_generate_tokens(LexState* lexer) {
 			append->line = line;
 			append->type = TOK_NUMBER;
 			append->nval = (uint8_t)strtol(buf, NULL, base);
-			append_token(lexer, append);
+			append_token(L, append);
 			free(buf);
 			buf = NULL;
 		} else if (isalpha(*at) || *at == '_') {
@@ -142,28 +151,29 @@ lex_generate_tokens(LexState* lexer) {
 			append->sval = malloc(length + 1);
 			strncpy(append->sval, scan, length);
 			append->sval[length] = 0;
-			append_token(lexer, append);
+			append_token(L, append);
 			scan += length;
 		} else {
 			scan++;
 		}
 	}
 	
-	print_token_list(lexer->tokens);
+	print_token_list(L->tokens);
 }
 
 TokenList*
 lex_file(const char* filename) {
 	
-	LexState* lexer = lex_init(filename);
-	if (!lexer) {
+	LexState* L = lex_init(filename);
+	if (!L) {
 		printf("couldn't open file '%s'", filename);
 		exit(1);
 	}
 
-	lex_generate_tokens(lexer);
+	lex_generate_tokens(L);
 
-	TokenList* save = lexer->tokens;
-	free(lexer);
+	TokenList* save = L->tokens;
+	lex_destroy(L);
+
 	return save;	
 }

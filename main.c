@@ -1,8 +1,8 @@
 #include <stdio.h>
-#include "lex.h"
+#include "assemble.h"
 
 int main() {
 	
-	TokenList* tokens = lex_file("test.txt");	
+	assemble_file("test.vms", "test.vmb");
 
 }
