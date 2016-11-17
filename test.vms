@@ -1,4 +1,3 @@
 MOV A, 42
-MOV A, 0xFF 
+ADD A, 16
 MOV B, A
-ADD B, C

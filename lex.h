@@ -36,6 +36,7 @@ struct TokenList {
 	Token* value;
 	TokenList* head;
 	TokenList* next;
+	TokenList* prev;
 };
 
 TokenList* lex_file(const char*);

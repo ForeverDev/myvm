@@ -7,6 +7,7 @@ typedef struct AssembleState AssembleState;
 
 struct AssembleState {
 	TokenList* tokens;
+	TokenList* at;
 	FILE* handle; /* output */
 };
 

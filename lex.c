@@ -37,6 +37,7 @@ new_list() {
 	list->value = NULL;
 	list->head = list;
 	list->next = NULL;
+	list->prev = NULL;
 	return list;
 }
 
@@ -55,6 +56,7 @@ append_token(LexState* L, Token* token) {
 			tail = tail->next;
 		}
 		tail->next = newlist;
+		newlist->prev = tail;
 	}
 }
 
